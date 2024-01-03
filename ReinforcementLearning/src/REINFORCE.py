@@ -10,7 +10,10 @@ from torch.distributions import Categorical
 from embedData import embedFlightData, flatten, print_xlsx, readXlsx
 from functions import *
 from CrewPairingEnv import CrewPairingEnv
+import time
+from datetime import datetime
 import random
+import pytz
 
 #Hyperparameters
 gamma   = 0.98
@@ -75,13 +78,12 @@ def main():
     #scores = []
     bestScore= 99999999999999
     output = [[] for i in range(N_flight)]
-
+    n_epi=0
     with open('episode_rewards.txt', 'w') as file:
-        file.write("Episode\tReward\tBest Score\n")
+        file.write("Episode\tReward\tBest Score\tCurrent Time\tTimer\n")
         file.write("---------------------------------\n")
-    
-        for n_epi in range(500):
-            print("############################ n_epi: ", n_epi, " ############################")
+        start_time = time.time()
+        while(1):
             s, _ = env.reset()  #현재 플라이트 V_P_list  <- V_f list[0]
             done = False
             output_tmp = [[] for i in range(N_flight)]
@@ -89,12 +91,15 @@ def main():
             while not done:            
                 index_list = deflect_hard(env.V_p_list, s)
                 prob = pi(index_list)
+                if torch.isnan(prob).any():
+                    print("NaN detected in probabilities, breaking loop")
+                    break
                 
                 selected_prob = prob[index_list]
                 a = index_list[selected_prob.argmax().item()]
                 
-                s_prime, r, done, truncated, info = env.step(action=a, V_f=s)
-                        
+                s_prime, r, done, truncated, info = env.step(action=a, V_f=s) 
+                
                 pi.put_data((r,prob[a]))
                 s = s_prime     #action에 의해 바뀐 flight
                 score += r
@@ -105,10 +110,13 @@ def main():
             if bestScore>score:
                 bestScore=score
                 output = output_tmp
-            
-            file.write(f"{n_epi}\t{score:.2f}\t{bestScore:.2f}\n")
-            print(f"current score : {score:.2f} best score : {bestScore:.2f}")
+            seoul_timezone = pytz.timezone('Asia/Seoul')
+            elapsed_time = time.time() - start_time
+            current_time = datetime.now(seoul_timezone).strftime("%Y-%m-%d %H:%M:%S")
+            file.write(f"{n_epi}\t{score:.2f}\t{bestScore:.2f}\t{current_time}\t{elapsed_time:.2f}\n")
+            print(f"n_epi:{n_epi}\tcurrent score : {score:.2f} best score : {bestScore:.2f} Current Time:{current_time} Timer: {elapsed_time}")
             score=0
+            n_epi=n_epi+1
     
     env.close()
     
