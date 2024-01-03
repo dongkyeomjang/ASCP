@@ -65,7 +65,7 @@ class Policy(nn.Module):
 def main():
     current_directory = os.path.dirname(__file__)
     path = os.path.abspath(os.path.join(current_directory, '../dataset'))
-    readXlsx(path, '/input_500.xlsx')
+    readXlsx(path, '/input_50000.xlsx')
 
     flight_list, V_f_list = embedFlightData(path)
     
@@ -87,12 +87,14 @@ def main():
             s, _ = env.reset()  #현재 플라이트 V_P_list  <- V_f list[0]
             done = False
             output_tmp = [[] for i in range(N_flight)]
-            
+            break_outer_loop = False
+
             while not done:            
                 index_list = deflect_hard(env.V_p_list, s)
                 prob = pi(index_list)
                 if torch.isnan(prob).any():
                     print("NaN detected in probabilities, breaking loop")
+                    break_outer_loop=True
                     break
                 
                 selected_prob = prob[index_list]
@@ -105,7 +107,8 @@ def main():
                 score += r
                 
                 output_tmp[a].append(flight_list[env.flight_cnt-1].id)
-                
+            if break_outer_loop==True:
+                break
             pi.train_net()
             if bestScore>score:
                 bestScore=score
