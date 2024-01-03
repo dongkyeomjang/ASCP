@@ -80,8 +80,8 @@ def main():
     output = [[] for i in range(N_flight)]
     n_epi=0
     with open('episode_rewards.txt', 'w') as file:
-        file.write("Episode\tReward\tBest Score\tCurrent Time\tTimer\n")
-        file.write("---------------------------------\n")
+        file.write("Episode\tReward\t     Best Score\t        Current Time          \tTimer\n")
+        file.write("------------------------------------------------------------------------\n")
         start_time = time.time()
         while(1):
             s, _ = env.reset()  #현재 플라이트 V_P_list  <- V_f list[0]
@@ -113,7 +113,7 @@ def main():
             seoul_timezone = pytz.timezone('Asia/Seoul')
             elapsed_time = time.time() - start_time
             current_time = datetime.now(seoul_timezone).strftime("%Y-%m-%d %H:%M:%S")
-            file.write(f"{n_epi}\t{score:.2f}\t{bestScore:.2f}\t{current_time}\t{elapsed_time:.2f}\n")
+            file.write(f"{n_epi}\t{score:.2f}\t{bestScore:.2f}\t{current_time}           {elapsed_time:.2f}\n")
             print(f"n_epi:{n_epi}\tcurrent score : {score:.2f} best score : {bestScore:.2f} Current Time:{current_time} Timer: {elapsed_time}")
             score=0
             n_epi=n_epi+1
